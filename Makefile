@@ -1,4 +1,4 @@
-.PHONY: build clean test install run help fmt vet lint
+.PHONY: build clean test install run help fmt vet lint release
 
 BINARY_NAME=txtar
 VERSION?=dev
@@ -17,6 +17,7 @@ help:
 	@echo "  fmt        - Format code"
 	@echo "  vet        - Run go vet"
 	@echo "  lint       - Run golangci-lint (if installed)"
+	@echo "  release    - Create and push a new tag (auto-increment)"
 	@echo "  all        - Format, vet, test, and build"
 
 build:
@@ -67,5 +68,15 @@ lint:
 
 all: fmt vet test build
 	@echo "All tasks complete"
+
+release:
+	@echo "Creating new release..."
+	@LATEST_TAG=$$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0"); \
+	echo "Latest tag: $$LATEST_TAG"; \
+	NEW_TAG=$$(echo $$LATEST_TAG | awk -F. '{$$NF = $$NF + 1;} 1' | sed 's/ /./g'); \
+	echo "New tag: $$NEW_TAG"; \
+	git tag $$NEW_TAG && \
+	git push origin $$NEW_TAG && \
+	echo "Successfully created and pushed tag $$NEW_TAG"
 
 .DEFAULT_GOAL := help
