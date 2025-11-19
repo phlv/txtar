@@ -242,9 +242,6 @@ func packGit(opts PackOptions, filter *Filter) ([]string, map[string][]byte, err
 		return nil, nil, fmt.Errorf("failed to open git repository: %w", err)
 	}
 
-	var files []string
-	fileContents := make(map[string][]byte)
-
 	if opts.Commit != "" {
 		return packCommit(repo, opts.Commit, filter)
 	}
