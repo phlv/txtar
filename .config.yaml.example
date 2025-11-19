@@ -1,0 +1,11 @@
+pack:
+  default_exclude:
+    - "*.log"
+    - "node_modules/"
+    - ".git/"
+    - "*.tmp"
+  ignore_binary: true
+
+unpack:
+  backup: false
+  dir: "."

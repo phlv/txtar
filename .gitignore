@@ -1,0 +1,11 @@
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+txtar
+*.exe
+dist/
+build/
+coverage.out
