@@ -175,6 +175,8 @@ func Pack(ctx context.Context, opts PackOptions) (*txtar.Archive, []string, erro
 			relativePath = strings.TrimPrefix(relativePath, "/")
 		}
 
+		relativePath = filepath.ToSlash(relativePath)
+
 		content := fileContents[file]
 		archive.Files = append(archive.Files, txtar.File{
 			Name: relativePath,

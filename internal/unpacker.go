@@ -28,11 +28,13 @@ func Unpack(archive *txtar.Archive, opts UnpackOptions) error {
 	}
 
 	for _, file := range archive.Files {
-		if err := validatePath(file.Name); err != nil {
+		normalizedPath := filepath.FromSlash(file.Name)
+		
+		if err := validatePath(normalizedPath); err != nil {
 			return fmt.Errorf("invalid path %q: %w", file.Name, err)
 		}
 
-		targetPath := filepath.Join(opts.Dir, file.Name)
+		targetPath := filepath.Join(opts.Dir, normalizedPath)
 
 		if opts.DryRun {
 			fmt.Printf("Would write: %s\n", targetPath)
