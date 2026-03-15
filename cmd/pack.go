@@ -25,9 +25,10 @@ func init() {
 	rootCmd.AddCommand(packCmd)
 
 	packCmd.Flags().StringVarP(&packOpts.Output, "output", "o", "-", "Output file path, '-' for stdout")
-	packCmd.Flags().StringSliceVar(&packOpts.Include, "include", []string{}, "Include patterns (glob)")
-	packCmd.Flags().StringSliceVar(&packOpts.Exclude, "exclude", []string{}, "Exclude patterns (glob)")
+	packCmd.Flags().StringSliceVarP(&packOpts.Include, "include", "i", []string{}, "Include patterns (glob)")
+	packCmd.Flags().StringSliceVarP(&packOpts.Exclude, "exclude", "e", []string{}, "Exclude patterns (glob)")
 	packCmd.Flags().BoolVar(&packOpts.Git, "git", false, "Enable Git-aware mode")
+	packCmd.Flags().BoolVar(&packOpts.Diff, "diff", false, "Pack files from current git diff (staged, unstaged, and untracked; requires --git)")
 	packCmd.Flags().StringVar(&packOpts.Commit, "commit", "", "Pack specific commit (requires --git)")
 	packCmd.Flags().IntVar(&packOpts.Since, "since", 0, "Pack files changed in last N commits (requires --git)")
 	packCmd.Flags().BoolVar(&packOpts.Staged, "staged", false, "Pack staged changes (requires --git)")
@@ -57,8 +58,28 @@ func runPack(cmd *cobra.Command, args []string) error {
 		packOpts.IgnoreBinary = viper.GetBool("pack.ignore_binary")
 	}
 
-	if (packOpts.Commit != "" || packOpts.Since > 0 || packOpts.Staged || packOpts.Worktree) && !packOpts.Git {
+	if (packOpts.Diff || packOpts.Commit != "" || packOpts.Since > 0 || packOpts.Staged || packOpts.Worktree) && !packOpts.Git {
 		return fmt.Errorf("Git-specific flags require --git")
+	}
+
+	gitModeCount := 0
+	if packOpts.Diff {
+		gitModeCount++
+	}
+	if packOpts.Commit != "" {
+		gitModeCount++
+	}
+	if packOpts.Since > 0 {
+		gitModeCount++
+	}
+	if packOpts.Staged {
+		gitModeCount++
+	}
+	if packOpts.Worktree {
+		gitModeCount++
+	}
+	if gitModeCount > 1 {
+		return fmt.Errorf("--diff, --commit, --since, --staged, and --worktree are mutually exclusive")
 	}
 
 	archive, files, err := internal.Pack(context.Background(), packOpts)

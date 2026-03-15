@@ -23,6 +23,7 @@ type PackOptions struct {
 	Include       []string
 	Exclude       []string
 	Git           bool
+	Diff          bool
 	Commit        string
 	Since         int
 	Staged        bool
@@ -248,6 +249,10 @@ func packGit(opts PackOptions, filter *Filter) ([]string, map[string][]byte, err
 		return packCommit(repo, opts.Commit, filter)
 	}
 
+	if opts.Diff {
+		return packGitDiff(repo, opts.Dir, filter)
+	}
+
 	if opts.Since > 0 {
 		return packSince(repo, opts.Since, filter)
 	}
@@ -391,6 +396,47 @@ func packSince(repo *git.Repository, n int, filter *Filter) ([]string, map[strin
 
 		files = append(files, path)
 		fileContents[path] = []byte(content)
+	}
+
+	return files, fileContents, nil
+}
+
+func packGitDiff(repo *git.Repository, dir string, filter *Filter) ([]string, map[string][]byte, error) {
+	w, err := repo.Worktree()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	status, err := w.Status()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get status: %w", err)
+	}
+
+	var files []string
+	fileContents := make(map[string][]byte)
+
+	for path, fileStatus := range status {
+		if fileStatus.Staging == git.Unmodified && fileStatus.Worktree == git.Unmodified {
+			continue
+		}
+
+		if !filter.ShouldInclude(path) {
+			continue
+		}
+
+		fullPath := filepath.Join(dir, path)
+		content, err := os.ReadFile(fullPath)
+		if err != nil {
+			// Deleted paths can appear in git status but cannot be packed from disk.
+			continue
+		}
+
+		if filter.ignoreBinary && bytes.Contains(content[:min(1024, len(content))], []byte{0}) {
+			continue
+		}
+
+		files = append(files, path)
+		fileContents[path] = content
 	}
 
 	return files, fileContents, nil
